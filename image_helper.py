@@ -35,12 +35,12 @@ def demosaic(raw_image, kernel_width, kernel_height):
     print "Raw Image Size:   (%s, %s)" % raw_image.size
     print "Sub Image Size:   (%s, %s)" % (sub_image_width, sub_image_height)
 
-    # For each lenslet column
-    for lenslet_x_iter in range(kernel_width):
-        print "Demosaicing sub-image %s/%s..." % (lenslet_x_iter * kernel_width, kernel_width * kernel_height)
+    # For each lenslet row
+    for lenslet_y_iter in range(kernel_height):
+        print "Demosaicing sub-image %s/%s..." % (lenslet_y_iter * kernel_width, kernel_width * kernel_height)
 
-        # For each lenslet in the column
-        for lenslet_y_iter in range(kernel_height):
+        # For each lenslet in the row
+        for lenslet_x_iter in range(kernel_width):
        
             sub_image_data = []
  
@@ -87,8 +87,10 @@ def demosaic_1(raw_image, kernel_width, kernel_height):
 
     print "Calculating the dimensions of the sub-images..."
     (raw_image_width, raw_image_height) = raw_image.size
-    sub_image_width  = raw_image_width / kernel_width
-    sub_image_height = raw_image_height / kernel_height
+    sub_image_width  = kernel_width
+    sub_image_height = kernel_height
+    num_rows = raw_image_height / kernel_height
+    num_columns = row_image_width / kernel_width
 
     print "Raw Image Format: %s" % raw_image.format
     print "Raw Image Size:   (%s, %s)" % raw_image.size

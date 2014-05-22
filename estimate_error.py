@@ -23,11 +23,11 @@ def estimate_error(angular_resolution, depth, noise):
     pixel1 = 0
 
     # Add noise in the lenslet position to the pixel positions
-    pixel0 += random.uniform(0, noise)
-    pixel1 += random.uniform(0, noise)
+    pixel0 -= noise
+    pixel1 += noise
 
     # Estimate the depth given the noisey pixel positions
-    depth_estimate = math.tan(math.pi / 4) * math.fabs(pixel1 - pixel0)
+    depth_estimate = math.fabs(pixel1 - pixel0) / math.tan(angular_resolution)
 
     # Calculate the error in the depth estimate
     estimate_error = math.fabs(depth_estimate - depth)
@@ -42,40 +42,53 @@ def estimate_error(angular_resolution, depth, noise):
 
     return estimate_error
 
-if __name__ == "__main__":
-    if len(sys.argv) >= 2 and sys.argv[1] == "debug":
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-
-    depths       = [1, 5, 10, 25, 50, 100, 1000, 4000]
-    noises       = [0.1, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01, 0.001, 0.0001]
+def fixed_depth(depth):
+    errors       = []
+    noises       = [5.0, 1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.01, 0.001, 0.0001]
     sensor_width = 0.0359
-    
-    # For each depth distance of interest
-    for depth in depths:
-        logging.info("Performing error sensitivity analysis for depth %s...", depth)        
 
-        # Determine the maximum possible spatial resolution
-        max_angular_resolution = math.atan(sensor_width * 0.5 / depth)
-        logging.info("Maximum possible angular resolution: %s", max_angular_resolution)
+    logging.info("Performing error sensitivity analysis for depth %s...", depth)
 
-        # For each angular resolution
-        for angular_resolution_iter in range(100):
-            angular_resolution = angular_resolution_iter * max_angular_resolution / 100
-            logging.info("Performing error sensitivity analysis for angular resolution %s...", angular_resolution)
+    # Determine the maximum possible spatial resolution
+    max_angular_resolution = math.atan(sensor_width * 0.5 / depth)
+    logging.info("Maximum possible angular resolution: %s", max_angular_resolution)
 
-            # For each noise value
-            for noise in noises:
-                logging.info("Noise (%% of sensor width): %s", noise)
+    # For each angular resolution
+    for angular_resolution_iter in range(1, 10):
+        angular_resolution = angular_resolution_iter * max_angular_resolution / 10
+        logging.info("Performing error sensitivity analysis for angular resolution %s...", angular_resolution)
 
-                # Noise is applied randomly so take a definitive sample
-                error = 0
-                for iter in range(100):
-                    error += estimate_error(angular_resolution, depth, noise * sensor_width)
-                    
-                error /= 100
-                print "Error: ", error
+        # For each noise value
+        noise_errors = []
+        for noise in noises:
+            logging.info("Noise (%% of sensor width): %s", noise)
 
+            error = estimate_error(angular_resolution, depth, noise / 100 * sensor_width)
+            noise_errors.append(error)
+
+        errors.append(noise_errors)
+
+    line = ""
+    for iter in range(1, 10):
+        angular_resolution = iter * max_angular_resolution / 10
+        line = "%s %s" % (line, angular_resolution)
+    print "Angles: ", line
+
+    for noise_iter in range(len(noises)):
+        print "Noise: ", noises[noise_iter]
         
-    estimate_error(1, 10, 0.001)
+        line = ""
+        for angle_iter in range(9): 
+            line = "%s %s" % (line, errors[angle_iter][noise_iter])
+
+        print line
+
+
+if __name__ == "__main__":
+    if sys.argv[1] == "debug":
+        logging.basicConfig(level = logging.DEBUG)
+    else:
+        logging.basicConfig(level = logging.INFO)
+
+    if sys.argv[2] == "depth":
+        fixed_depth(float(sys.argv[3]))
